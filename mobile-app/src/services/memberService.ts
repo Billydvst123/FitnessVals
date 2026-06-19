@@ -7,8 +7,17 @@ export interface CalorieSummary {
   remaining_calorie: number;
 }
 
+export interface BMILog {
+  id: number;
+  weight: number;
+  height: number;
+  bmi: number;
+  recorded_at: string;
+}
+
 export interface MemberDashboardResponse {
   calorie_summary: CalorieSummary;
+  bmi_progress?: BMILog[];
 }
 
 export interface NutritionLogRequest {

@@ -11,9 +11,12 @@ const getBaseUrl = () => {
   if (Platform.OS === 'web') {
     return 'http://localhost:3000/api';
   } else if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000/api';
+    // Jika menggunakan HP Fisik Android, gunakan IP Lokal komputer: 10.39.48.134
+    // Jika menggunakan Emulator Android, gunakan: 10.0.2.2
+    return 'http://10.39.48.134:3000/api'; 
   } else {
-    return 'http://localhost:3000/api';
+    // Gunakan IP lokal komputer untuk iOS fisik/simulator
+    return 'http://10.39.48.134:3000/api';
   }
 };
 

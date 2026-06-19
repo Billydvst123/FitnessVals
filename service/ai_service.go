@@ -99,10 +99,10 @@ func (s *aiService) GetMealRecommendation(userID uint) (string, error) {
 	fmt.Println("Ollama API Error (Recommendation):", err)
 
 	// Fallback Engine if Ollama is off or not installed
-	return "⚠️ Gagal terhubung ke Ollama lokal. Pastikan aplikasi Ollama berjalan dan model 'llava' sudah terunduh.\n\n" + s.getMockRecommendation(profile, bmi, bmiCategory), nil
+	return "⚠️ Gagal terhubung ke Ollama lokal. Pastikan aplikasi Ollama berjalan dan model 'minicpm-v' sudah terunduh.\n\n" + s.getMockRecommendation(profile, bmi, bmiCategory), nil
 }
 
-// AnalyzeFoodImage processes a food image using local Ollama Vision (llava).
+// AnalyzeFoodImage processes a food image using local Ollama Vision (minicpm-v).
 func (s *aiService) AnalyzeFoodImage(imageBase64 string) (*FoodNutritionResult, error) {
 	prompt := `Analisis gambar ini. Pertama, pastikan apakah gambar ini adalah makanan atau minuman. Jika BUKAN makanan/minuman (misalnya wajah orang, hewan, benda mati, pemandangan, dll), kembalikan JSON dengan key "is_food": false, dan tuliskan "food_name" sebagai alasan penolakan (misal: "Ini adalah gambar sepatu"). Jika INI ADALAH makanan/minuman, kembalikan JSON dengan keys: "is_food": true, "food_name" (string nama makanan utamanya), "calories" (int estimasi total), "protein" (float), "carbs" (float), "fat" (float). Jangan berikan teks lain selain JSON.`
 	
@@ -113,7 +113,7 @@ func (s *aiService) AnalyzeFoodImage(imageBase64 string) (*FoodNutritionResult, 
 	}
 
 	var result FoodNutritionResult
-	if err := json.Unmarshal([]byte(resText), &result); err != nil {
+	if err := json.Unmarshal([]byte(extractJSON(resText)), &result); err != nil {
 		fmt.Println("Ollama JSON Parse Error:", err, "Response was:", resText)
 		return nil, fmt.Errorf("AI Error: Respon dari Ollama tidak dapat dibaca.")
 	}
@@ -128,7 +128,7 @@ func (s *aiService) AnalyzeFoodImage(imageBase64 string) (*FoodNutritionResult, 
 
 // AnalyzeFoodText estimates nutrition based on food name using local Ollama.
 func (s *aiService) AnalyzeFoodText(foodName string) (*FoodNutritionResult, error) {
-	prompt := fmt.Sprintf(`Berikan estimasi kalori, protein (g), karbohidrat (g), dan lemak (g) untuk porsi standar dari makanan ini: "%s". Berikan respons HANYA dalam format JSON dengan keys: "is_food": true, "food_name" (string nama makanan diperbaiki), "calories" (int), "protein" (float), "carbs" (float), "fat" (float). Jangan berikan teks lain selain JSON.`, foodName)
+	prompt := fmt.Sprintf(`Berikan estimasi kalori, protein (g), karbohidrat (g), dan lemak (g) untuk takaran/porsi dari makanan ini: "%s". Berikan respons HANYA dalam format JSON dengan keys: "is_food": true, "food_name" (string nama makanan diperbaiki), "calories" (int), "protein" (float), "carbs" (float), "fat" (float). Jangan berikan teks lain selain JSON.`, foodName)
 	
 	resText, err := askOllama(prompt, "", true)
 	if err != nil {
@@ -137,7 +137,7 @@ func (s *aiService) AnalyzeFoodText(foodName string) (*FoodNutritionResult, erro
 	}
 
 	var result FoodNutritionResult
-	if err := json.Unmarshal([]byte(resText), &result); err != nil {
+	if err := json.Unmarshal([]byte(extractJSON(resText)), &result); err != nil {
 		fmt.Println("Ollama JSON Parse Error:", err, "Response was:", resText)
 		return s.getMockTextNutrition(foodName), nil
 	}
@@ -186,7 +186,7 @@ PENTING: Berikan respons HANYA dalam format JSON dengan key "calories_burned" (i
 	var result struct {
 		CaloriesBurned int `json:"calories_burned"`
 	}
-	if err := json.Unmarshal([]byte(resText), &result); err != nil {
+	if err := json.Unmarshal([]byte(extractJSON(resText)), &result); err != nil {
 		fmt.Println("Ollama JSON Parse Error (WorkoutCalories):", err, "Response was:", resText)
 		return s.getMockWorkoutCalories(workout), nil
 	}
@@ -199,7 +199,7 @@ func askOllama(prompt, imageBase64 string, requireJSON bool) (string, error) {
 	url := "http://127.0.0.1:11434/api/generate"
 
 	reqBody := map[string]interface{}{
-		"model":  "llava",
+		"model":  "minicpm-v",
 		"prompt": prompt,
 		"stream": false,
 	}
@@ -347,4 +347,14 @@ func (s *aiService) getMockWorkoutCalories(workout *models.WorkoutLog) int {
 		// Rough estimate: 2 calories per rep
 		return sets * reps * 2
 	}
+}
+
+// extractJSON attempts to find and return only the JSON portion from a string containing mixed text
+func extractJSON(input string) string {
+	start := strings.Index(input, "{")
+	end := strings.LastIndex(input, "}")
+	if start >= 0 && end >= 0 && end > start {
+		return input[start : end+1]
+	}
+	return input
 }

@@ -4,9 +4,9 @@ import { Home, Apple, Brain, User, Dumbbell } from 'lucide-react-native';
 export default function MemberLayout() {
   return (
     <Tabs screenOptions={{
-      tabBarActiveTintColor: '#f85a65',
+      tabBarActiveTintColor: '#ef4444',
       tabBarInactiveTintColor: '#94a3b8',
-      headerShown: true,
+      headerShown: false,
       headerStyle: {
         backgroundColor: '#ffffff',
       },
