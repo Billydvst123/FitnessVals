@@ -1,4 +1,35 @@
+# Environment & credentials
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.keystore
+
+# Go build & test artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+/bin/
+/dist/
+/tmp/
+
+# Node / Expo / Mobile artifacts
 node_modules/
 .expo/
-*.exe
+.expo-shared/
+web-build/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# OS files
+.DS_Store
+Thumbs.db
