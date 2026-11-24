@@ -3,21 +3,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 // Platform-aware API URL:
-// - Web: same machine, use localhost
+// - EXPO_PUBLIC_API_URL overrides platform defaults (useful for physical devices on LAN)
 // - Android Emulator: 10.0.2.2 maps to host machine's localhost
-// - iOS Simulator: localhost works directly
-// - Physical device: replace with your computer's local IP
-const getBaseUrl = () => {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:3000/api';
-  } else if (Platform.OS === 'android') {
-    // Jika menggunakan HP Fisik Android, gunakan IP Lokal komputer: 10.39.48.134
-    // Jika menggunakan Emulator Android, gunakan: 10.0.2.2
-    return 'http://10.39.48.134:3000/api'; 
-  } else {
-    // Gunakan IP lokal komputer untuk iOS fisik/simulator
-    return 'http://10.39.48.134:3000/api';
+// - Web / iOS Simulator: localhost works directly
+const getBaseUrl = (): string => {
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (envUrl) {
+    return envUrl;
   }
+
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:3000/api';
+  }
+
+  return 'http://localhost:3000/api';
 };
 
 const api = axios.create({

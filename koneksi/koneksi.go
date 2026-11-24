@@ -2,6 +2,7 @@ package koneksi
 
 import (
 	"fmt"
+	"os"
 
 	"PPT/models"
 
@@ -11,9 +12,21 @@ import (
 
 var DB *gorm.DB
 
+func getEnv(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return fallback
+}
+
 func KoneksiDatabase() {
-	
-	dsn := "root:@tcp(127.0.0.1:3306)/cobappt?charset=utf8mb4&parseTime=True&loc=Local"
+	dbHost := getEnv("DB_HOST", "127.0.0.1")
+	dbPort := getEnv("DB_PORT", "3306")
+	dbUser := getEnv("DB_USER", "root")
+	dbPass := os.Getenv("DB_PASS")
+	dbName := getEnv("DB_NAME", "cobappt")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPass, dbHost, dbPort, dbName)
 	database, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(fmt.Sprintf("Failed to connect to database: %v", err))

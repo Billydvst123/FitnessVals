@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"PPT/koneksi"
 	"PPT/routes"
@@ -57,8 +59,14 @@ func main() {
 	// Configure routing groups
 	routes.SetupRouter(r)
 
-	fmt.Println("Server is running on http://localhost:3000")
-	if err := r.Run(":3000"); err != nil {
+	port := strings.TrimSpace(os.Getenv("PORT"))
+	port = strings.TrimPrefix(port, ":")
+	if port == "" {
+		port = "3000"
+	}
+
+	fmt.Printf("Server is running on http://localhost:%s\n", port)
+	if err := r.Run(":" + port); err != nil {
 		panic(fmt.Sprintf("Failed to start server: %v", err))
 	}
 }

@@ -6,12 +6,32 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"PPT/models"
 	"PPT/repository"
 )
+
+const (
+	defaultOllamaURL   = "http://127.0.0.1:11434"
+	defaultOllamaModel = "minicpm-v"
+)
+
+func getOllamaURL() string {
+	if url := strings.TrimSpace(os.Getenv("OLLAMA_URL")); url != "" {
+		return strings.TrimRight(url, "/")
+	}
+	return defaultOllamaURL
+}
+
+func getOllamaModel() string {
+	if model := strings.TrimSpace(os.Getenv("OLLAMA_MODEL")); model != "" {
+		return model
+	}
+	return defaultOllamaModel
+}
 
 type FoodNutritionResult struct {
 	IsFood   bool    `json:"is_food"`
@@ -99,17 +119,17 @@ func (s *aiService) GetMealRecommendation(userID uint) (string, error) {
 	fmt.Println("Ollama API Error (Recommendation):", err)
 
 	// Fallback Engine if Ollama is off or not installed
-	return "⚠️ Gagal terhubung ke Ollama lokal. Pastikan aplikasi Ollama berjalan dan model 'minicpm-v' sudah terunduh.\n\n" + s.getMockRecommendation(profile, bmi, bmiCategory), nil
+	return fmt.Sprintf("⚠️ Gagal terhubung ke Ollama lokal. Pastikan aplikasi Ollama berjalan dan model '%s' sudah terunduh.\n\n%s", getOllamaModel(), s.getMockRecommendation(profile, bmi, bmiCategory)), nil
 }
 
-// AnalyzeFoodImage processes a food image using local Ollama Vision (minicpm-v).
+// AnalyzeFoodImage processes a food image using local Ollama Vision.
 func (s *aiService) AnalyzeFoodImage(imageBase64 string) (*FoodNutritionResult, error) {
 	prompt := `Analisis gambar ini. Pertama, pastikan apakah gambar ini adalah makanan atau minuman. Jika BUKAN makanan/minuman (misalnya wajah orang, hewan, benda mati, pemandangan, dll), kembalikan JSON dengan key "is_food": false, dan tuliskan "food_name" sebagai alasan penolakan (misal: "Ini adalah gambar sepatu"). Jika INI ADALAH makanan/minuman, kembalikan JSON dengan keys: "is_food": true, "food_name" (string nama makanan utamanya), "calories" (int estimasi total), "protein" (float), "carbs" (float), "fat" (float). Jangan berikan teks lain selain JSON.`
 	
 	resText, err := askOllama(prompt, imageBase64, true)
 	if err != nil {
 		fmt.Println("Ollama API Error (Image):", err)
-		return nil, fmt.Errorf("AI Error: Gagal terhubung ke Ollama lokal. Pastikan aplikasi Ollama sedang berjalan (127.0.0.1:11434).")
+		return nil, fmt.Errorf("AI Error: Gagal terhubung ke Ollama lokal. Pastikan aplikasi Ollama sedang berjalan (%s).", getOllamaURL())
 	}
 
 	var result FoodNutritionResult
@@ -196,10 +216,10 @@ PENTING: Berikan respons HANYA dalam format JSON dengan key "calories_burned" (i
 
 // askOllama is a helper to call local Ollama REST API.
 func askOllama(prompt, imageBase64 string, requireJSON bool) (string, error) {
-	url := "http://127.0.0.1:11434/api/generate"
+	url := getOllamaURL() + "/api/generate"
 
 	reqBody := map[string]interface{}{
-		"model":  "minicpm-v",
+		"model":  getOllamaModel(),
 		"prompt": prompt,
 		"stream": false,
 	}
