@@ -1,7 +1,11 @@
 package routes
 
 import (
+	"net/http"
+	"time"
+
 	"PPT/controllers"
+	"PPT/koneksi"
 	"PPT/middleware"
 	"PPT/repository"
 	"PPT/service"
@@ -22,6 +26,34 @@ func SetupRouter(r *gin.Engine) {
 	aiController := controllers.NewAIController(aiService)
 	memberController := controllers.NewMemberController()
 	workoutController := controllers.NewWorkoutController(workoutRepo, userRepo, aiService)
+
+	// 0. HEALTH CHECK
+	r.GET("/api/health", func(ctx *gin.Context) {
+		dbStatus := "not_initialized"
+		statusCode := http.StatusOK
+		overallStatus := "ok"
+
+		if koneksi.DB != nil {
+			sqlDB, err := koneksi.DB.DB()
+			if err != nil {
+				dbStatus = "error"
+				overallStatus = "degraded"
+				statusCode = http.StatusServiceUnavailable
+			} else if err := sqlDB.PingContext(ctx.Request.Context()); err != nil {
+				dbStatus = "disconnected"
+				overallStatus = "degraded"
+				statusCode = http.StatusServiceUnavailable
+			} else {
+				dbStatus = "connected"
+			}
+		}
+
+		ctx.JSON(statusCode, gin.H{
+			"status":    overallStatus,
+			"database":  dbStatus,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
 
 	// 1. AUTHENTICATION ROUTES (GUEST)
 	authGroup := r.Group("/api/auth")
