@@ -2,12 +2,21 @@ package utils
 
 import (
 	"errors"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecretKey = []byte("GYM_FITNESS_REST_API_SUPER_SECRET_KEY")
+const defaultJWTSecret = "GYM_FITNESS_REST_API_SUPER_SECRET_KEY"
+
+func getJWTSecret() []byte {
+	if secret := strings.TrimSpace(os.Getenv("JWT_SECRET")); secret != "" {
+		return []byte(secret)
+	}
+	return []byte(defaultJWTSecret)
+}
 
 // Claims represents JWT claims
 type Claims struct {
@@ -29,7 +38,7 @@ func GenerateToken(userID uint, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtSecretKey)
+	tokenString, err := token.SignedString(getJWTSecret())
 	if err != nil {
 		return "", err
 	}
@@ -43,7 +52,7 @@ func ValidateToken(tokenString string) (*Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return jwtSecretKey, nil
+		return getJWTSecret(), nil
 	})
 
 	if err != nil {
